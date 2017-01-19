@@ -1,0 +1,12 @@
+{
+  "name": "millenniumbcp-extract",
+  "version": "0.0.1",
+  "description": "Extrai informação para CSV a partir do extracto combinado mensal do Millennium BCP.",
+  "main": "index.js",
+  "bin": {
+    "millenniumbcp-extract": "index.js"
+  },
+  "author": "Nelson Antunes <nelson.antunes@gmail.com>",
+  "license": "MIT",
+  "dependencies": {}
+}
