@@ -4,8 +4,6 @@
 
 var argc = process.argv.length;
 
-console.log(process.argv);
-
 if (argc < 3) {
   printHelp();
 }
@@ -41,9 +39,16 @@ function processFile(filename) {
       throw err;
     }
 
+    console.log("\n------------------------------------");
+    console.log(filename);
     console.log("------------------------------------\n");
 
     var matches = data.match(/CONTA:\s*(\d+)/);
+
+    if (matches == null || matches.length == 0) {
+      console.log("Formato desconhecido.");
+      return;
+    }
 
     var conta = matches[1];
 
@@ -113,7 +118,7 @@ function processFile(filename) {
 
     matches = data.match(/PERMANENTE\s*(\d{10}) *((?:\d| )*\.\d\d).*\s*.*DATA\s*(\d{4}\/\d{1,2}\/\d{1,2})\s*(?:\d{4}\/\d{1,2}\/\d{1,2}).*\s*(\d+)\s*(?:\d+).*\s*(\d*\.\d\d).*(?:\d*\.\d\d).*\s*(\d*\.\d\d).*(?:\d*\.\d\d).*\s*(\d*\.\d\d).*(?:\d*\.\d\d).*\s*.*(\d\.\d\d).*\s*.*(\d\.\d\d\d-?).*\s*(\d\.\d\d\d-?).*\s*(\d\.\d\d\d-?)/);
 
-    if(matches.length > 0) {
+    if(matches != null && matches.length > 0) {
       var emprestimo = getIntegerValue(matches[1]);
       var montante = getDecimalValue(matches[2]);
       var data = getTextValue(matches[3]);
@@ -200,11 +205,19 @@ function removeWhitespace(val) {
 }
 
 function getDecimalValue(val) {
+  if(val == null || val == "") {
+    return NaN;
+  }
+
   var clean = removeWhitespace(val);
   return (clean.endsWith("-") ? -1 : 1) * parseFloat(clean);
 }
 
 function getIntegerValue(val) {
+  if(val == null || val == "") {
+    return NaN;
+  }
+
   return parseInt(removeWhitespace(val));
 }
 
