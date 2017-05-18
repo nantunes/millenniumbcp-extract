@@ -116,25 +116,35 @@ function processFile(filename) {
 
     console.log("\n------------------------------------\n");
 
-    matches = data.match(/PERMANENTE\s*(\d{10}) *((?:\d| )*\.\d\d).*\s*.*DATA\s*(\d{4}\/\d{1,2}\/\d{1,2})\s*(?:\d{4}\/\d{1,2}\/\d{1,2}).*\s*(\d+)\s*(?:\d+).*\s*(\d*\.\d\d).*(?:\d*\.\d\d).*\s*(\d*\.\d\d).*(?:\d*\.\d\d).*\s*(\d*\.\d\d).*(?:\d*\.\d\d).*\s*.*(\d\.\d\d).*\s*.*(\d\.\d\d\d-?).*\s*(\d\.\d\d\d-?).*\s*(\d\.\d\d\d-?)/);
+    var regEx = /PERMANENTE\s*(\d{10}) *((?:\d| )*\.\d\d).*\s*.*DATA\s*(\d{4}\/\d{1,2}\/\d{1,2})\s*(?:\d{4}\/\d{1,2}\/\d{1,2}).*\s*(\d+)\s*(?:\d+).*\s*(\d*\.\d\d).*(?:\d*\.\d\d).*\s*(\d*\.\d\d).*(?:\d*\.\d\d).*\s*(\d*\.\d\d).*(?:\d*\.\d\d).*\s*.*(\d\.\d\d)/g; //.*\s*.*(\d\.\d\d\d-?).*\s*(\d\.\d\d\d-?).*\s*(\d\.\d\d\d-?)/;
+    regEx.lastIndex = movimentos_regex.lastIndex;
 
-    if(matches != null && matches.length > 0) {
+    var noCredit = true;
+
+    while(matches = regEx.exec(data)) {
+      noCredit = false;
+
       var emprestimo = getIntegerValue(matches[1]);
       var montante = getDecimalValue(matches[2]);
-      var data = getTextValue(matches[3]);
+      var cal_data = getTextValue(matches[3]);
       var n_prestacao = getIntegerValue(matches[4]);
       var valor = getDecimalValue(matches[5]);
       var capital = getDecimalValue(matches[6]);
       var juro = getDecimalValue(matches[7]);
       var comissao = getDecimalValue(matches[8]);
-      var taxa = getDecimalValue(matches[9]);
-      var indexante = getDecimalValue(matches[10]);
-      var spread = getDecimalValue(matches[11]);
+
+      var taxRegEx = /TAN\s*(\d\.\d\d\d-?).*\s*(\d\.\d\d\d-?).*\s*(\d\.\d\d\d-?)/g;
+      taxRegEx.lastIndex = regEx.lastIndex;
+      var taxMatches = taxRegEx.exec(data);
+
+      var taxa = getDecimalValue(taxMatches[1]);
+      var indexante = getDecimalValue(taxMatches[2]);
+      var spread = getDecimalValue(taxMatches[3]);
 
       console.log("Empréstimo nº " + emprestimo);
       console.log("Montante em dívida:\t" + montante + " €");
       console.log();
-      console.log("Prestação nº " + n_prestacao + " (" + data + ")");
+      console.log("Prestação nº " + n_prestacao + " (" + cal_data + ")");
       console.log("\tValor:\t\t" + valor + " €");
       console.log();
       console.log("\tCapital:\t" + capital + " €");
@@ -142,19 +152,25 @@ function processFile(filename) {
       console.log();
       console.log("\tComissão:\t" + comissao + " €");
       console.log();
-      console.log("\tTaxa:\t\t" + taxa);
-      console.log("\tIndexante:\t" + indexante);
-      console.log("\tSpread:\t\t" + spread);
+      console.log("\tTaxa:\t\t" + taxa + "%");
+      console.log("\tIndexante:\t" + indexante + "%");
+      console.log("\tSpread:\t\t" + spread + "%");
 
-      fs.appendFileSync("cred-" + emprestimo + ".csv", [n_prestacao, data, valor, capital, juro, comissao, indexante, spread, montante].join(separator) + "\n");
-    } else {
+      var decimal_taxa = taxa ? round(taxa / 100, 6) : "";
+      var decimal_indexante = indexante ? round(indexante / 100, 6) : "";
+      var decimal_spread = spread ? round(spread / 100, 6) : "";
+
+      fs.appendFileSync("cred-" + emprestimo + ".csv", [n_prestacao, cal_data, valor, capital, juro, comissao, decimal_taxa, decimal_indexante, decimal_spread, montante].join(separator) + "\n");
+    }
+
+    if(noCredit) {
       // código para um formato de extracto anterior
       var movimentos_regex = /(\d{10}) +((?:\d| )*\.\d\d) +(\d{4}\/\d{1,2}\/\d{1,2}) +(\d*\.\d\d)(?:[\s\S]*?(\d\.\d{1,3}-?)%.*?(\d\.\d{1,3}-?)%.*?(\d\.\d{1,3}-?)%)?/g;
       var movimento;
       while(movimento = movimentos_regex.exec(data)) {
         var emprestimo = getIntegerValue(movimento[1]);
         var montante = getDecimalValue(movimento[2]);
-        var data = getTextValue(movimento[3]);
+        var cal_data = getTextValue(movimento[3]);
         var n_prestacao = 0;
         var valor = getDecimalValue(movimento[4]);
         var capital = "";
@@ -176,7 +192,7 @@ function processFile(filename) {
         console.log("Empréstimo nº " + emprestimo);
         console.log("Montante em dívida:\t" + montante + " €");
         console.log();
-        console.log("Prestação nº " + n_prestacao + " (" + data + ")");
+        console.log("Prestação nº " + n_prestacao + " (" + cal_data + ")");
         console.log("\tValor:\t\t" + valor + " €");
         console.log();
         console.log("\tCapital:\t" + capital + " €");
@@ -184,11 +200,11 @@ function processFile(filename) {
         console.log();
         console.log("\tComissão:\t" + comissao + " €");
         console.log();
-        console.log("\tTaxa:\t\t" + taxa);
-        console.log("\tIndexante:\t" + indexante);
-        console.log("\tSpread:\t\t" + spread);
+        console.log("\tTaxa:\t\t" + taxa + "%");
+        console.log("\tIndexante:\t" + indexante + "%");
+        console.log("\tSpread:\t\t" + spread + "%");
 
-        fs.appendFileSync("cred-" + emprestimo + ".csv", [n_prestacao, data, valor, capital, juro, comissao, indexante, spread, montante].join(separator) + "\n");
+        fs.appendFileSync("cred-" + emprestimo + ".csv", [n_prestacao, cal_data, valor, capital, juro, comissao, taxa ? taxa / 100 : "", indexante ? indexante / 100 : "", spread ? spread / 100 : "", montante].join(separator) + "\n");
       }
     }
 
@@ -228,4 +244,8 @@ function getTextValue(val) {
 function printHelp() {
   console.log("Usage: " + process.argv[1] + " [-s<char>] FILENAME");
   process.exit(1);
+}
+
+function round(value, decimals) {
+  return Number(Math.round(value+'e'+decimals)+'e-'+decimals);
 }
